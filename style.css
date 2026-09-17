@@ -103,6 +103,9 @@ a { color: var(--accent); }
   gap: 1.25rem;
   margin: 1.25rem 0;
 }
+.results-grid figure {
+  min-width: 0;
+}
 
 figure {
   margin: 0;
