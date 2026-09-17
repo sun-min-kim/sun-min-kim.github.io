@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Project 1 — Sun Min Kim</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <div class="container">
+        <a class="backlink" href="../index.html">&larr; Back to home</a>
+        <h1>Project 1</h1>
+        <p class="subtitle">Images of the Russian Empire: Colorizing the Prokudin-Gorskii Photo Collection</p>
+
+        <h2>Single-Scale Alignment</h2>
+
+        <h3>Approach</h3>
+        <p class="todo">Each photo taken by Prokudin-Gorskii is a combination of 3 grey-scale images ordered Blue, Red, and Green. In order to colorize the image, the 3 images must be merged. For the following 3 .jpg images, the grey-scale images was divided into 3, with each third representing one color-scale. Each individual image was then cropped in order to get rid of the borders. This was done because including the coloring of the borders of the image would throw off the scoring we use when aligning the 3 images. Finally, we align the 3 images together, using the blue image as a base. In order to align the green and red images to the blue one, I made use of the L2 norm, also known as the Euclidian Distance. This approach works by using a window of ±15 pixels and summing it's values in order to calculate the misalignment between the two images. The best alignment is then logged and used to align the two images together. By doing this to the green and red images (using the blue as a base), we were able to align the 3 images below pretty well. The single-scale alignment was only performed on the smaller .jpg images.</p>
+
+        <h3>Results</h3>
+        <p class="todo">Using the single scale alignment process described above, the cathedral, monastery, and tobolsk .jpg images were aligned very well. The borders does still show coloring that is off but that is a result of the original grey-scale images misalignment. The core of the image is still aligned well.</p>
+        <div class="results-grid">
+            <figure>
+                <img src="single_scale_alignment/cathedral.jpg" alt="Aligned cathedral">
+                <figcaption>cathedral.jpg — Green = (5, 2), Red = (12, 3)</figcaption>
+            </figure>
+            <figure>
+                <img src="single_scale_alignment/monastery.jpg" alt="Aligned monastery">
+                <figcaption>monastery.jpg — Green = (-3, 2), Red = (3, 2)</figcaption>
+            </figure>
+            <figure>
+                <img src="single_scale_alignment/tobolsk.jpg" alt="Aligned tobolsk">
+                <figcaption>tobolsk.jpg — Green = (3, 3), Red = (6, 3)</figcaption>
+            </figure>
+        </div>
+
+        <h2>Pyramid Alignment</h2>
+
+        <h3>Approach</h3>
+        <p class="todo">For larger .tif images, our single scale alignment wouldn't return accurate results over a smaller window, and using a larger window would make the process much more inefficient. In order to solve this, we can make use of an image pyramid, scaling down the image recursively and running our alignment algorithm from before, and then returning the value up while scaling up the image again. In order to do this, we repeat the same image splitting and cropping process as before. Then we make use of our pyramid function and recurse down, scaling down the image by 0.5 each time until either the x or y dimension reaches 350. At this point, we make use of our alignment algorithm from the single-scale alignment. This will give us a rough alignment score which we return up. As we recurse back up, we use both the scaled up image and double the alignment score (to account for the scale down earlier) as the base for our alignment at this new level. Eventually, our alignments will get closer as we approach the top of the stack. At each level, the window that is searched through stays at ±15.</p>
+
+        <h3>Results</h3>
+        <p class="todo">Below are the image results for the image pyramid alignment method (all .jpg and .tif images). As we can see, all of the images are aligned well except for 'emir'. For this image, because the brightness level of each grey-scale image is different, our L2 algorithm doesn't account for it perfectly. In order to improve this, using a more advanced alignment strategy could fix the issue.</p>
+        <div class="results-grid">
+            <figure>
+                <img src="pyramid_alignment/wharf.jpg" alt="Aligned wharf">
+                <figcaption>wharf — Green = (15, -7), Red = (83, -16)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/emir.jpg" alt="Aligned emir">
+                <figcaption>emir — Green = (49, 24), Red = (88, 44)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/religous_painting.jpg" alt="Aligned religous_painting">
+                <figcaption>religous_painting — Green = (28, 3), Red = (68, 7)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/church.jpg" alt="Aligned church">
+                <figcaption>church — Green = (25, 4), Red = (58, -4)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/three_generations.jpg" alt="Aligned three_generations">
+                <figcaption>three_generations — Green = (53, 14), Red = (112, 11)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/harvesters.jpg" alt="Aligned harvesters">
+                <figcaption>harvesters — Green = (59, 16), Red = (124, 13)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/icon.jpg" alt="Aligned icon">
+                <figcaption>icon — Green = (41, 17), Red = (89, 23)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/ilemselga.jpg" alt="Aligned ilemselga">
+                <figcaption>ilemselga — Green = (40, 7), Red = (130, 11)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/melons.jpg" alt="Aligned melons">
+                <figcaption>melons — Green = (82, 10), Red = (179, 13)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/self_portrait.jpg" alt="Aligned self_portrait">
+                <figcaption>self_portrait — Green = (78, 29), Red = (176, 37)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/siren.jpg" alt="Aligned siren">
+                <figcaption>siren — Green = (49, -6), Red = (95, -25)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/cathedral.jpg" alt="Aligned cathedral">
+                <figcaption>cathedral — Green = (5, 2), Red = (12, 3)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/monastery.jpg" alt="Aligned monastery">
+                <figcaption>monastery — Green = (-3, 2), Red = (3, 2)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/tobolsk.jpg" alt="Aligned tobolsk">
+                <figcaption>tobolsk — Green = (3, 3), Red = (6, 3)</figcaption>
+            </figure>
+        </div>
+
+        <h3>Extra Images (My Own Selection)</h3>
+        <p class="todo">Below are 3 more images I selected from the Prokudin-Gorskii collection. The images selected are "[Brick building with arched entrance and arcade]", "[Front view of a crumbling mosque, with a man standing beside it]" and "[Floodgates at dam facility]" respectively. All three aligned well.</p>
+        <div class="results-grid">
+            <figure>
+                <img src="pyramid_alignment/[extra]_brick_building.jpg" alt="Aligned Brick building with arched entrance and arcade">
+                <figcaption>Brick building with arched entrance and arcade — Green = (44, -12), Red = (100, -27)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/[extra]_crumbling_mosque.jpg" alt="Aligned Front view of a crumbling mosque, with a man standing beside it">
+                <figcaption>Front view of a crumbling mosque, with a man standing beside it — Green = (26, 10), Red = (70, 11)</figcaption>
+            </figure>
+            <figure>
+                <img src="pyramid_alignment/[extra]_dam.jpg" alt="Aligned Floodgates at dam facility">
+                <figcaption>Floodgates at dam facility — Green = (33, -11), Red = (87, -20)</figcaption>
+            </figure>
+        </div>
+    </div>
+</body>
+</html>

@@ -97,6 +97,13 @@ a { color: var(--accent); }
   .pair { grid-template-columns: 1fr; }
 }
 
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin: 1.25rem 0;
+}
+
 figure {
   margin: 0;
 }
