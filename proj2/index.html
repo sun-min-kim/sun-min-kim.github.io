@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Project 2 — Sun Min Kim</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        pre {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1.25rem 0;
+        }
+        .grid-3 figure { min-width: 0; }
+        @media (max-width: 620px) {
+            .grid-3 { grid-template-columns: 1fr; }
+        }
+        table {
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 0.4rem 0.8rem;
+            text-align: left;
+        }
+        .pixelated img { image-rendering: pixelated; }
+        /* All images in a single row, sharing the width equally */
+        .row {
+            display: flex;
+            gap: 0.75rem;
+            margin: 1.25rem 0;
+            align-items: flex-start;
+        }
+        .row figure { flex: 1 1 0; min-width: 0; }
+        @media (max-width: 620px) {
+            .row { flex-wrap: wrap; }
+            .row figure { flex-basis: 45%; }
+        }
+        /* DoG filters: small, same height */
+        .dog-row {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            margin: 1.25rem 0;
+        }
+        .dog-row figure img {
+            width: auto;
+            height: 140px;
+        }
+        /* Narrower 3-column grids for the stack figures */
+        .grid-3.compact {
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="backlink" href="../index.html">&larr; Back to home</a>
+        <h1>Project 2</h1>
+        <p class="subtitle">Fun with Filters and Frequencies</p>
+
+        <!-- ===================== PART 1 ===================== -->
+
+        <h2>Part 1.1: Convolutions from Scratch</h2>
+
+        <h3>Implementation</h3>
+        <p>The following is the code for the convolution I implemented myself. Both first flip the kernel and add zero padding before sliding the kernel over every pixel. The first code is my approach which made use of four for-loops, looping over every pixel, and then over every pixel within the kernel for each pixel. For the two for-loop approach, I looped over every pixel and then simply calculated all of the pixels within the kernel at once instead of looping over each individual one.</p>
+
+        <pre><code>def four_loop_convolution(image, kernel):
+    image_height, image_width = image.shape
+    kernel_y, kernel_x = kernel.shape
+    kernel = np.flip(kernel) # Flip filter
+    output_image = np.zeros((image_height, image_width))
+    padded_image = np.pad(image, ((kernel_y // 2, kernel_y // 2), (kernel_x // 2, kernel_x // 2))) # Pad image by kernel // 2 on all edges
+
+    for y in range(image_height):
+        for x in range(image_width):
+            total = 0
+
+            for ky in range(kernel_y):
+                for kx in range(kernel_x):
+                    kernel_value = kernel[ky, kx]
+                    total += padded_image[y + ky, x + kx] * kernel_value
+
+            output_image[y, x] = total
+
+    return output_image</code></pre>
+
+        <pre><code>def two_loop_convoluiton(image, kernel):
+    image_height, image_width = image.shape
+    kernel_y, kernel_x = kernel.shape
+    kernel = np.flip(kernel) # Flip filter
+    output_image = np.zeros((image_height, image_width))
+    padded_image = np.pad(image, ((kernel_y // 2, kernel_y // 2), (kernel_x // 2, kernel_x // 2))) # Pad image by kernel // 2 on all edges
+
+    for y in range(image_height):
+        for x in range(image_width):
+            kernel_covered = padded_image[y:y + kernel_y, x:x + kernel_x] # Section of image covered under kernel
+            kerneled_pixel = kernel_covered * kernel
+            output_image[y, x] = np.sum(kerneled_pixel)
+
+    return output_image</code></pre>
+
+        <h3>Comparison with scipy.signal.convolve2d</h3>
+        <table>
+            <tr><th>Method</th><th>Runtime (9&times;9 box filter)</th></tr>
+            <tr><td>Four loops</td><td>8.157 s</td></tr>
+            <tr><td>Two loops</td><td>0.958 s</td></tr>
+            <tr><td>scipy.signal.convolve2d</td><td>0.044 s</td></tr>
+        </table>
+        <p>The four for-loop approach ran the slowest at 8.157 s. The two for-loop approach was significantly faster at 0.958 s, just over 8 times faster. This is probably because the four for-loops go over every pixel, and for every pixel, every pixel covered by the kernel, while the two for-loops are faster because numpy does all of the math inside. The built-in scipy method is the fastest, running at 0.044 s. For boundaries, the for-loop methods I wrote zero-pad, meaning a black border is added. Scipy's method also zero-pads by default (<code>boundary="fill"</code>), but it can instead mirror (<code>"symm"</code>) or wrap (<code>"wrap"</code>) the border.</p>
+
+        <h3>Results on My Selfie</h3>
+        <div class="row">
+            <figure>
+                <img src="output/part_one/selfie_blurred_9.jpg" alt="Selfie blurred with my 9x9 box filter">
+                <figcaption>9&times;9 box filter (my two-loop convolution)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_one/selfie_scipy_blurred_9.jpg" alt="Selfie blurred with scipy convolve2d">
+                <figcaption>9&times;9 box filter (scipy.signal.convolve2d)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_one/selfie_dx.jpg" alt="Selfie convolved with Dx">
+                <figcaption>D<sub>x</sub> = [1, 0, &minus;1]</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_one/selfie_dy.jpg" alt="Selfie convolved with Dy">
+                <figcaption>D<sub>y</sub> = [1, 0, &minus;1]<sup>T</sup></figcaption>
+            </figure>
+        </div>
+        <p>The first 9&times;9 kernel filter averages out each pixel with its neighbors, effectively blurring the image. D<sub>x</sub> represents the change in brightness going left to right, while D<sub>y</sub> represents the change in brightness going top to bottom. This means that D<sub>x</sub> highlights vertical edges while D<sub>y</sub> highlights horizontal edges.</p>
+
+        <h2>Part 1.2: Finite Difference Operator</h2>
+
+        <p>&part;I/&part;x represents the image convolved with D<sub>x</sub> and &part;I/&part;y represents the image convolved with D<sub>y</sub>. The gradient magnitude is computed as &radic;(dx&sup2; + dy&sup2;), which represents the edge strength in any direction (vertical, horizontal, or diagonal).</p>
+
+        <div class="grid-3">
+            <figure>
+                <img src="output/part_one/cameraman_dx.jpg" alt="Cameraman partial derivative in x">
+                <figcaption>&part;I/&part;x</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_one/cameraman_dy.jpg" alt="Cameraman partial derivative in y">
+                <figcaption>&part;I/&part;y</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_one/cameraman_gradient_magnitude.jpg" alt="Cameraman gradient magnitude">
+                <figcaption>Gradient magnitude</figcaption>
+            </figure>
+        </div>
+
+        <h3>Binarized Edge Image</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="output/part_one/cameraman_edges_0.15.jpg" alt="Edges at threshold 0.15">
+                <figcaption>Threshold 0.15 (too noisy)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_one/cameraman_edges_0.25.jpg" alt="Edges at threshold 0.25">
+                <figcaption>Threshold 0.25 (chosen)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_one/cameraman_edges_0.35.jpg" alt="Edges at threshold 0.35">
+                <figcaption>Threshold 0.35 (losing edges)</figcaption>
+            </figure>
+        </div>
+        <p>For the threshold, choosing one that is too low leaves in a lot of speckles, like the ones from the grass that can be seen in 0.15, while a higher threshold may cause actual edges to start vanishing, like the background in 0.35. Because of this, I chose a threshold of 0.25, which had a good balance between removing specks and keeping edges. This way, the cameraman's edges remain while minimal grass specks appear.</p>
+
+        <h2>Part 1.3: Derivative of Gaussian (DoG) Filter</h2>
+
+        <h3>Gaussian Smoothing First</h3>
+        <p>To build the Gaussian, I made use of the built-in <code>cv2.getGaussianKernel</code> function to get a 1D kernel, and then calculated the outer product with the transpose of itself. Here, I used &sigma; = 1 and a kernel size of 7. Before taking the derivative, I blurred the image first with the Gaussian kernel and then applied the steps from 1.2 to get a gradient magnitude.</p>
+        <div class="grid-3">
+            <figure>
+                <img src="output/part_one/gaussian_cameraman_blurred.jpg" alt="Cameraman blurred with Gaussian">
+                <figcaption>Gaussian blurred</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_one/gaussian_gradient_magnitude.jpg" alt="Gradient magnitude of blurred cameraman">
+                <figcaption>Gradient magnitude (blur, then D<sub>x</sub>/D<sub>y</sub>)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_one/gaussian_cameraman_edges_0.1.jpg" alt="Binarized edges of blurred cameraman">
+                <figcaption>Binarized edges, threshold 0.1</figcaption>
+            </figure>
+        </div>
+        <p>A big difference I see is that this approach is a lot smoother, with the specks in the grass from Part 1.2 not being present. Additionally, the edges themselves are more defined compared to 1.2, where they are fragmented and sharp. For the threshold, I used 0.1. A lower value could be used compared to 1.2 because the Gaussian blur already smooths out the small changes in brightness which appear as specks in Part 1.2.</p>
+
+        <h3>DoG Filters</h3>
+        <div class="dog-row pixelated">
+            <figure>
+                <img src="output/part_one/DoG_x.jpg" alt="DoG filter in x">
+                <figcaption>DoG<sub>x</sub> = G &lowast; D<sub>x</sub></figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_one/DoG_y.jpg" alt="DoG filter in y">
+                <figcaption>DoG<sub>y</sub> = G &lowast; D<sub>y</sub></figcaption>
+            </figure>
+        </div>
+
+        <h3>Single Convolution with DoG</h3>
+        <div class="pair">
+            <figure>
+                <img src="output/part_one/gaussian_gradient_magnitude.jpg" alt="Gradient magnitude from blur then derivative">
+                <figcaption>Blur, then D<sub>x</sub>/D<sub>y</sub> (two convolutions)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_one/DoG_cameraman_gradient_magnitude.jpg" alt="Gradient magnitude from DoG filters">
+                <figcaption>DoG filters (one convolution)</figcaption>
+            </figure>
+        </div>
+        <p>The DoG is the Gaussian convolved with either D<sub>x</sub> or D<sub>y</sub>. This allows us to only do one convolution on the image instead of two separate ones. As you can see, the result from this is the same as earlier, as the math itself is the same for each process: we are simply just combining the filters before we do the convolution, letting us only do it once.</p>
+
+        <!-- ===================== PART 2 ===================== -->
+
+        <h2>Part 2.1: Image "Sharpening"</h2>
+
+        <h3>Unsharp Mask Filter</h3>
+        <p>In this section, we use the Gaussian kernel as a low-pass filter to keep only the smooth parts of the image. By subtracting this image from the original image, we obtain a high frequency image which highlights the edges and textures in the image. By adding the high frequency image (scaled by &alpha;) to the original image, we can effectively sharpen the image by making details like edges and textures become more pronounced. This can all be combined into one kernel: (1 + &alpha;) &times; identity &minus; &alpha; &times; Gaussian, where the identity kernel is all zeros with a one in the middle. Additionally, we apply it to each color channel separately to preserve the color of the image.</p>
+
+        <h3>Taj Mahal</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="taj.jpg" alt="Original Taj Mahal">
+                <figcaption>Original</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/taj_blurred.jpg" alt="Blurred Taj Mahal">
+                <figcaption>Blurred (low frequencies)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/taj_high_frequency.jpg" alt="High frequencies of Taj Mahal">
+                <figcaption>High frequencies</figcaption>
+            </figure>
+        </div>
+        <div class="row">
+            <figure>
+                <img src="output/part_two/taj_sharpened_0.5.jpg" alt="Taj sharpened alpha 0.5">
+                <figcaption>&alpha; = 0.5</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/taj_sharpened_1.jpg" alt="Taj sharpened alpha 1">
+                <figcaption>&alpha; = 1</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/taj_sharpened_2.jpg" alt="Taj sharpened alpha 2">
+                <figcaption>&alpha; = 2</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/taj_sharpened_4.jpg" alt="Taj sharpened alpha 4">
+                <figcaption>&alpha; = 4</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/taj_sharpened_8.jpg" alt="Taj sharpened alpha 8">
+                <figcaption>&alpha; = 8</figcaption>
+            </figure>
+        </div>
+        <p>Above, we can see the image with the high frequencies added again to sharpen, but at different levels. Looking at 0.5 and 1, the image looks sharper. However, 2 looks a bit too strong with the details, and 4 and 8 are oversharpened, with the details dominating the photo. I think the ideal amount is 1.</p>
+
+        <h3>Tokyo Street</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="tokyo_street_1.jpg" alt="Original Tokyo street">
+                <figcaption>Original</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/tokyo_street_1_blurred.jpg" alt="Blurred Tokyo street">
+                <figcaption>Blurred (low frequencies)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/tokyo_street_1_high_frequency.jpg" alt="High frequencies of Tokyo street">
+                <figcaption>High frequencies</figcaption>
+            </figure>
+        </div>
+        <div class="row">
+            <figure>
+                <img src="output/part_two/tokyo_street_1_sharpened_0.5.jpg" alt="Tokyo street sharpened alpha 0.5">
+                <figcaption>&alpha; = 0.5</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/tokyo_street_1_sharpened_1.jpg" alt="Tokyo street sharpened alpha 1">
+                <figcaption>&alpha; = 1</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/tokyo_street_1_sharpened_2.jpg" alt="Tokyo street sharpened alpha 2">
+                <figcaption>&alpha; = 2</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/tokyo_street_1_sharpened_4.jpg" alt="Tokyo street sharpened alpha 4">
+                <figcaption>&alpha; = 4</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/tokyo_street_1_sharpened_8.jpg" alt="Tokyo street sharpened alpha 8">
+                <figcaption>&alpha; = 8</figcaption>
+            </figure>
+        </div>
+        <p>Above is another image, this time of a random street in Tokyo. The image has a lot of existing detail in it from the brick pavement and the buildings in the background (and the truck). Like the Taj Mahal, the image looks crisper at 0.5 to 1, but the pattern of too much detail appears for 4 and 8.</p>
+
+        <h3>Blur, Then Resharpen</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="tokyo_street_2.jpg" alt="Original sharp image">
+                <figcaption>Original (sharp)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/tokyo_street_2_blurred.jpg" alt="Blurred image">
+                <figcaption>Blurred</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/tokyo_street_2_resharpened_2.jpg" alt="Resharpened image">
+                <figcaption>Resharpened, &alpha; = 2</figcaption>
+            </figure>
+        </div>
+        <p>In the image above of another street in Tokyo, we first blur the image and then resharpen it at &alpha; = 2. Comparing the original to the resharpened image, something we can notice is that sharpening can't bring back detail that was lost. This can be seen as the resharpened image of the street still looks blurry despite being sharpened again. This is because the high frequency information that contained those details was removed to begin with when the image was first blurred.</p>
+
+        <h2>Part 2.2: Hybrid Images</h2>
+
+        <p>In the following section, we create hybrid images. To do this, we apply a low-pass filter on the image that will be visible from afar, and a high-pass filter on the image that will be visible up close. Both make use of a Gaussian. By adding these two images together, we end up with an image where both are visible but from different distances. To do this, I also made use of the provided starter code to align the images.</p>
+
+        <h3>Full Process: Lee Kang-in + Son Heung-min</h3>
+
+        <h4>Original Images</h4>
+        <div class="pair">
+            <figure>
+                <img src="lee_kang_in.jpg" alt="Lee Kang-in original">
+                <figcaption>Lee Kang-in (far / low frequency)</figcaption>
+            </figure>
+            <figure>
+                <img src="son_heung_min.jpg" alt="Son Heung-min original">
+                <figcaption>Son Heung-min (close / high frequency)</figcaption>
+            </figure>
+        </div>
+
+        <h4>Aligned Images and Their Fourier Transforms</h4>
+        <div class="row">
+            <figure>
+                <img src="output/part_two/lee_kang_in_aligned.jpg" alt="Lee aligned">
+                <figcaption>Lee, aligned</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/lee_kang_in_alligned_fft.jpg" alt="Lee aligned FFT">
+                <figcaption>Lee, aligned (FFT)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/son_heung_min_aligned.jpg" alt="Son aligned">
+                <figcaption>Son, aligned</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/son_heung_min_alligned_fft.jpg" alt="Son aligned FFT">
+                <figcaption>Son, aligned (FFT)</figcaption>
+            </figure>
+        </div>
+
+        <h4>Filtered Images and Their Fourier Transforms</h4>
+        <div class="row">
+            <figure>
+                <img src="output/part_two/lee_kang_in_low_frequency.jpg" alt="Lee low-pass filtered">
+                <figcaption>Lee, low-pass (&sigma; = 5)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/lee_kang_in_low_frequency_fft.jpg" alt="Lee low-pass FFT">
+                <figcaption>Lee, low-pass (FFT)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/son_heung_min_high_frequency.jpg" alt="Son high-pass filtered">
+                <figcaption>Son, high-pass (&sigma; = 2)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/son_heung_min_high_frequency_fft.jpg" alt="Son high-pass FFT">
+                <figcaption>Son, high-pass (FFT)</figcaption>
+            </figure>
+        </div>
+
+        <h4>Hybrid Result</h4>
+        <div class="pair">
+            <figure>
+                <img src="output/part_two/hybrid_lee_kang_in_son_heung_min.jpg" alt="Lee and Son hybrid">
+                <figcaption>Hybrid</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/hybrid_lee_kang_in_son_heung_min_fft.jpg" alt="Lee and Son hybrid FFT">
+                <figcaption>Hybrid (FFT)</figcaption>
+            </figure>
+        </div>
+        <p>In the hybrid image above, I ran the low-pass filter on Lee Kang-in (a South Korean football player who plays for Atl&eacute;tico Madrid) while I ran a high-pass filter on Son Heung-min (current captain of the South Korean National Football Team). I used &sigma; = 5 for Lee and &sigma; = 2 for Son in order to optimize both being visible at different distances.</p>
+        <p>For the FFTs, the low pass of Lee shows a bright center while the high pass of Son does the opposite and removes the center, summing together to create the hybrid image above.</p>
+
+        <h3>Derek + Nutmeg</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="cs180_proj2_hybrid_starter_code/nutmeg.jpg" alt="Nutmeg original">
+                <figcaption>Nutmeg (far / low frequency)</figcaption>
+            </figure>
+            <figure>
+                <img src="cs180_proj2_hybrid_starter_code/DerekPicture.jpg" alt="Derek original">
+                <figcaption>Derek (close / high frequency)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/hybrid_nutmeg_DerekPicture.jpg" alt="Nutmeg and Derek hybrid">
+                <figcaption>Hybrid (low-pass &sigma; = 8, high-pass &sigma; = 4)</figcaption>
+            </figure>
+        </div>
+        <p>For this hybrid image of Nutmeg and Derek, I used &sigma; values of 8 and 4 respectively to create it. Up close, you can see the details of Derek, while from far away you see the blurred image of Nutmeg.</p>
+
+        <h3>Red Panda + Raccoon</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="red_panda.jpg" alt="Red panda original">
+                <figcaption>Red panda (far / low frequency)</figcaption>
+            </figure>
+            <figure>
+                <img src="racoon.jpg" alt="Raccoon original">
+                <figcaption>Raccoon (close / high frequency)</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/hybrid_red_panda_racoon.jpg" alt="Red panda and raccoon hybrid">
+                <figcaption>Hybrid (low-pass &sigma; = 8, high-pass &sigma; = 4)</figcaption>
+            </figure>
+        </div>
+        <p>For this hybrid image of a red panda and a raccoon, I also used &sigma; values of 8 and 4 respectively to create it. Up close, you can see the details of the raccoon, while from far away you see the blurred image of the red panda.</p>
+
+        <h2>Part 2.3: Gaussian and Laplacian Stacks</h2>
+
+        <p>In the following images, I created a Gaussian stack and a Laplacian stack of an image of an apple and an orange. The Gaussian stack was made by repeatedly blurring the image while not downsampling (as opposed to the pyramid in Project 1), while the Laplacian stack was made by subtracting the next level of the Gaussian stack from each level, essentially creating a series of images showing the difference between each level in the Gaussian stack (or an image of the lost details). Level 0 shows the original image with finer detail while level 5 shows the image heavily blurred.</p>
+
+        <h3>Apple</h3>
+        <div class="row">
+            <figure><img src="output/part_two/apple_gaussian_0.jpg" alt="Apple Gaussian level 0"><figcaption>Gaussian 0</figcaption></figure>
+            <figure><img src="output/part_two/apple_gaussian_1.jpg" alt="Apple Gaussian level 1"><figcaption>Gaussian 1</figcaption></figure>
+            <figure><img src="output/part_two/apple_gaussian_2.jpg" alt="Apple Gaussian level 2"><figcaption>Gaussian 2</figcaption></figure>
+            <figure><img src="output/part_two/apple_gaussian_3.jpg" alt="Apple Gaussian level 3"><figcaption>Gaussian 3</figcaption></figure>
+            <figure><img src="output/part_two/apple_gaussian_4.jpg" alt="Apple Gaussian level 4"><figcaption>Gaussian 4</figcaption></figure>
+            <figure><img src="output/part_two/apple_gaussian_5.jpg" alt="Apple Gaussian level 5"><figcaption>Gaussian 5</figcaption></figure>
+        </div>
+        <div class="row">
+            <figure><img src="output/part_two/apple_laplacian_0.jpg" alt="Apple Laplacian level 0"><figcaption>Laplacian 0</figcaption></figure>
+            <figure><img src="output/part_two/apple_laplacian_1.jpg" alt="Apple Laplacian level 1"><figcaption>Laplacian 1</figcaption></figure>
+            <figure><img src="output/part_two/apple_laplacian_2.jpg" alt="Apple Laplacian level 2"><figcaption>Laplacian 2</figcaption></figure>
+            <figure><img src="output/part_two/apple_laplacian_3.jpg" alt="Apple Laplacian level 3"><figcaption>Laplacian 3</figcaption></figure>
+            <figure><img src="output/part_two/apple_laplacian_4.jpg" alt="Apple Laplacian level 4"><figcaption>Laplacian 4</figcaption></figure>
+            <figure><img src="output/part_two/apple_laplacian_5.jpg" alt="Apple Laplacian level 5"><figcaption>Laplacian 5</figcaption></figure>
+        </div>
+
+        <h3>Orange</h3>
+        <div class="row">
+            <figure><img src="output/part_two/orange_gaussian_0.jpg" alt="Orange Gaussian level 0"><figcaption>Gaussian 0</figcaption></figure>
+            <figure><img src="output/part_two/orange_gaussian_1.jpg" alt="Orange Gaussian level 1"><figcaption>Gaussian 1</figcaption></figure>
+            <figure><img src="output/part_two/orange_gaussian_2.jpg" alt="Orange Gaussian level 2"><figcaption>Gaussian 2</figcaption></figure>
+            <figure><img src="output/part_two/orange_gaussian_3.jpg" alt="Orange Gaussian level 3"><figcaption>Gaussian 3</figcaption></figure>
+            <figure><img src="output/part_two/orange_gaussian_4.jpg" alt="Orange Gaussian level 4"><figcaption>Gaussian 4</figcaption></figure>
+            <figure><img src="output/part_two/orange_gaussian_5.jpg" alt="Orange Gaussian level 5"><figcaption>Gaussian 5</figcaption></figure>
+        </div>
+        <div class="row">
+            <figure><img src="output/part_two/orange_laplacian_0.jpg" alt="Orange Laplacian level 0"><figcaption>Laplacian 0</figcaption></figure>
+            <figure><img src="output/part_two/orange_laplacian_1.jpg" alt="Orange Laplacian level 1"><figcaption>Laplacian 1</figcaption></figure>
+            <figure><img src="output/part_two/orange_laplacian_2.jpg" alt="Orange Laplacian level 2"><figcaption>Laplacian 2</figcaption></figure>
+            <figure><img src="output/part_two/orange_laplacian_3.jpg" alt="Orange Laplacian level 3"><figcaption>Laplacian 3</figcaption></figure>
+            <figure><img src="output/part_two/orange_laplacian_4.jpg" alt="Orange Laplacian level 4"><figcaption>Laplacian 4</figcaption></figure>
+            <figure><img src="output/part_two/orange_laplacian_5.jpg" alt="Orange Laplacian level 5"><figcaption>Laplacian 5</figcaption></figure>
+        </div>
+
+        <h3>Recreating Figure 3.42</h3>
+        <p>Below is the recreation of Figure 3.42 from Szeliski, where both the apple and orange go through the Laplacian stack and are merged with a blend in the middle (to be discussed more in Part 2.4). Each row is from the same level of the Laplacian stack (0, 2, 4), showing the apple, the orange, and then the combined oraple. The last row shows all of the levels summed together.</p>
+        <div class="grid-3 compact">
+            <figure><img src="output/part_two/oraple_1_laplacian_0.jpg" alt="Masked apple Laplacian level 0"><figcaption>(a) Apple, level 0</figcaption></figure>
+            <figure><img src="output/part_two/oraple_2_laplacian_0.jpg" alt="Masked orange Laplacian level 0"><figcaption>(b) Orange, level 0</figcaption></figure>
+            <figure><img src="output/part_two/oraple_blended_laplacian_0.jpg" alt="Blended Laplacian level 0"><figcaption>(c) Blended, level 0</figcaption></figure>
+            <figure><img src="output/part_two/oraple_1_laplacian_2.jpg" alt="Masked apple Laplacian level 2"><figcaption>(d) Apple, level 2</figcaption></figure>
+            <figure><img src="output/part_two/oraple_2_laplacian_2.jpg" alt="Masked orange Laplacian level 2"><figcaption>(e) Orange, level 2</figcaption></figure>
+            <figure><img src="output/part_two/oraple_blended_laplacian_2.jpg" alt="Blended Laplacian level 2"><figcaption>(f) Blended, level 2</figcaption></figure>
+            <figure><img src="output/part_two/oraple_1_laplacian_4.jpg" alt="Masked apple Laplacian level 4"><figcaption>(g) Apple, level 4</figcaption></figure>
+            <figure><img src="output/part_two/oraple_2_laplacian_4.jpg" alt="Masked orange Laplacian level 4"><figcaption>(h) Orange, level 4</figcaption></figure>
+            <figure><img src="output/part_two/oraple_blended_laplacian_4.jpg" alt="Blended Laplacian level 4"><figcaption>(i) Blended, level 4</figcaption></figure>
+            <figure><img src="output/part_two/oraple_1_full.jpg" alt="Masked apple, all levels"><figcaption>(j) Apple, all levels</figcaption></figure>
+            <figure><img src="output/part_two/oraple_2_full.jpg" alt="Masked orange, all levels"><figcaption>(k) Orange, all levels</figcaption></figure>
+            <figure><img src="output/part_two/oraple_blended.jpg" alt="Oraple"><figcaption>(l) Oraple</figcaption></figure>
+        </div>
+
+        <h2>Part 2.4: Multiresolution Blending</h2>
+
+        <p>In this section, we make use of the Gaussian and Laplacian stacks again, but to blend two images together, we also make use of a Gaussian stack of a mask. In the example of the oraple, the mask is simply split by a straight vertical line, which we create a Gaussian stack of in order to create the effect of blending. As a result, the two images blend together at the middle instead of having a hard, straight change from apple to orange.</p>
+
+        <h3>The Oraple</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="apple.jpeg" alt="Apple">
+                <figcaption>Apple</figcaption>
+            </figure>
+            <figure>
+                <img src="orange.jpeg" alt="Orange">
+                <figcaption>Orange</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/oraple_blended.jpg" alt="Oraple">
+                <figcaption>Oraple (vertical seam)</figcaption>
+            </figure>
+        </div>
+
+        <h3>Seoul: Day to Night (Wavy Seam)</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="seoul_daytime.jpg" alt="Seoul during the day">
+                <figcaption>Seoul, day</figcaption>
+            </figure>
+            <figure>
+                <img src="seoul_nighttime.jpg" alt="Seoul at night">
+                <figcaption>Seoul, night</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/seoul_blended.jpg" alt="Seoul day and night blended">
+                <figcaption>Blended (wavy seam)</figcaption>
+            </figure>
+        </div>
+        <p>In this example here, I created a blend of Seoul's skyline during the day and night. For the mask itself, I made use of a wavy mask which was calculated using a sine wave seam. In this case, the amplitude chosen was 60 pixels and the period 40 pixels. This was the formula used: column = middle + 60 &times; sin(2&pi; &times; row / 40).</p>
+
+        <h3>My Face on the Sun (Irregular Mask)</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="selfie_moved.jpg" alt="Selfie scaled and moved onto the sun's position">
+                <figcaption>Selfie, scaled and moved</figcaption>
+            </figure>
+            <figure>
+                <img src="sun.jpg" alt="Sun">
+                <figcaption>Sun</figcaption>
+            </figure>
+            <figure>
+                <img src="output/part_two/sun_blended.jpg" alt="My face blended onto the sun">
+                <figcaption>Blended (elliptical mask)</figcaption>
+            </figure>
+        </div>
+        <p>In this last example, I created a blend between my face and the sky, replacing the sun with my face (since my name is "SUN" Min). I did this by first extending the photo of my selfie so it matched the dimensions of the image of the sky, and also had my face positioned where the sun would be. I then used an elliptical mask to show my face where the sun would be, while leaving the sky for the rest of the image. The blend then allowed my face to blend into the sky and the rays shining from the sun.</p>
+
+        <h3>Laplacian Stack of My Favorite Blend</h3>
+        <p>In the Laplacian stack of the blend with my face as the sun, level 0 shows the fine details of my face and the sky (clouds and sun rays). Level 2 shows more of these details but a bit blurred (or smoothed), while level 4 shows only the broadest shapes and colors. Summed together, these created the merged image of my face as the sun.</p>
+        <div class="grid-3 compact">
+            <figure><img src="output/part_two/sun_1_laplacian_0.jpg" alt="Masked face Laplacian level 0"><figcaption>Face, level 0</figcaption></figure>
+            <figure><img src="output/part_two/sun_2_laplacian_0.jpg" alt="Masked sun Laplacian level 0"><figcaption>Sun, level 0</figcaption></figure>
+            <figure><img src="output/part_two/sun_blended_laplacian_0.jpg" alt="Blended Laplacian level 0"><figcaption>Blended, level 0</figcaption></figure>
+            <figure><img src="output/part_two/sun_1_laplacian_2.jpg" alt="Masked face Laplacian level 2"><figcaption>Face, level 2</figcaption></figure>
+            <figure><img src="output/part_two/sun_2_laplacian_2.jpg" alt="Masked sun Laplacian level 2"><figcaption>Sun, level 2</figcaption></figure>
+            <figure><img src="output/part_two/sun_blended_laplacian_2.jpg" alt="Blended Laplacian level 2"><figcaption>Blended, level 2</figcaption></figure>
+            <figure><img src="output/part_two/sun_1_laplacian_4.jpg" alt="Masked face Laplacian level 4"><figcaption>Face, level 4</figcaption></figure>
+            <figure><img src="output/part_two/sun_2_laplacian_4.jpg" alt="Masked sun Laplacian level 4"><figcaption>Sun, level 4</figcaption></figure>
+            <figure><img src="output/part_two/sun_blended_laplacian_4.jpg" alt="Blended Laplacian level 4"><figcaption>Blended, level 4</figcaption></figure>
+            <figure><img src="output/part_two/sun_1_full.jpg" alt="Masked face, all levels"><figcaption>Face, all levels</figcaption></figure>
+            <figure><img src="output/part_two/sun_2_full.jpg" alt="Masked sun, all levels"><figcaption>Sun, all levels</figcaption></figure>
+            <figure><img src="output/part_two/sun_blended.jpg" alt="Final blend"><figcaption>Final blend</figcaption></figure>
+        </div>
+
+        <h2>Reflection</h2>
+        <p>Through this project, one thing that was highlighted to me was the prevalence/simplicity of the actual math that went behind modifying these images, often just involving basic arithmetic. For example, sharpening is just original + &alpha; &times; (original &minus; blurred). The various different image manipulation tactics were also extremely fun to learn, especially being able to experiment with different images of our choosing, creating some funny final images. I also really enjoyed learning about using Gaussian stacks and Laplacian stacks, which also were just repeatedly subtracting a blurrier version of the image from the previous one. This project also really made me think about images as just individual pixels that can be manipulated, contrasting what we see every day through our own human eyes.</p>
+    </div>
+</body>
+</html>
