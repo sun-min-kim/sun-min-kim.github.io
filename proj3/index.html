@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Project 3 — Sun Min Kim</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .wide {
+            margin: 1.25rem 0;
+        }
+        .row-label {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin: 1.5rem 0 -0.5rem;
+        }
+        .prompt {
+            font-style: italic;
+        }
+        /* Hybrid images: full size next to a tiny copy to simulate viewing from afar */
+        .hybrid {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-end;
+            margin: 1.25rem 0;
+        }
+        .w40 { width: 40%; }
+        .w55 { width: 55%; margin-left: auto; margin-right: auto; }
+        .w70 { width: 70%; margin-left: auto; margin-right: auto; }
+        .w85 { width: 85%; margin-left: auto; margin-right: auto; }
+        .w90 { width: 90%; margin-left: auto; margin-right: auto; }
+        .hybrid figure:first-child { flex: 0 1 300px; min-width: 0; }
+        .hybrid figure.far img { width: 64px; }
+        .hybrid figure.far { flex: 0 0 auto; max-width: 160px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="backlink" href="../index.html">&larr; Back to home</a>
+        <h1>Project 3</h1>
+        <p class="subtitle">Fun with Flow Models</p>
+
+        <!-- ===================== PART A ===================== -->
+
+        <h2>Part A: Exploring the Power of Flow Models</h2>
+
+        <h2>1.1: Constructing Noisy Training Inputs</h2>
+        <p>For this part, I built noisy training inputs using my image of a street in Tokyo at t = 0.25, 0.50, and 0.75. I made use of the equation x<sub>t</sub> = (1 &minus; t)&epsilon; + t &middot; x<sub>1</sub>. What we can see is that at the lowest t = 0.25 value, the image is dominated by noise while at t = 0.75, most of the detail is still somewhat clear.</p>
+        <figure class="wide">
+            <img src="images/part_A/training_inputs.png" alt="Original image and noisy inputs at t = 0.25, 0.50, 0.75">
+            <figcaption>Original image and noisy inputs at t = 0.25, 0.50, 0.75</figcaption>
+        </figure>
+
+        <h2>1.2: Classical Denoising</h2>
+        <p>Adding the Gaussian blur helps to remove some of the noise with a drawback of also blurring out real detail from the image. We can see this with precise details like wires disappearing so the result is still noisy and blurred.</p>
+        <figure class="wide w70">
+            <img src="images/part_A/blur_0.25.png" alt="Noisy input vs best Gaussian blur at t = 0.25">
+            <figcaption>Noisy input vs best Gaussian blur, t = 0.25</figcaption>
+        </figure>
+        <figure class="wide w70">
+            <img src="images/part_A/blur_0.5.png" alt="Noisy input vs best Gaussian blur at t = 0.50">
+            <figcaption>Noisy input vs best Gaussian blur, t = 0.50</figcaption>
+        </figure>
+        <figure class="wide w70">
+            <img src="images/part_A/blur_0.75.png" alt="Noisy input vs best Gaussian blur at t = 0.75">
+            <figcaption>Noisy input vs best Gaussian blur, t = 0.75</figcaption>
+        </figure>
+
+        <h2>1.3: One-Step Denoising</h2>
+        <p>Doing a one step denoising gives a much cleaner image than blurring. We do this by making use of the equation x&#770;<sub>1</sub> = x<sub>t</sub> + (1 &minus; t) &middot; v<sub>&theta;</sub>. It is the most effective at a high t = 0.75. At a lower t = 0.25, detail and fine texture are lost or smudged (like with the wires).</p>
+        <figure class="wide w70">
+            <img src="images/part_A/one_step_0.25.png" alt="Original, noisy input, and one-step estimate at t = 0.25">
+            <figcaption>Original, noisy input, and one-step estimate, t = 0.25</figcaption>
+        </figure>
+        <figure class="wide w70">
+            <img src="images/part_A/one_step_0.5.png" alt="Original, noisy input, and one-step estimate at t = 0.50">
+            <figcaption>Original, noisy input, and one-step estimate, t = 0.50</figcaption>
+        </figure>
+        <figure class="wide w70">
+            <img src="images/part_A/one_step_0.75.png" alt="Original, noisy input, and one-step estimate at t = 0.75">
+            <figcaption>Original, noisy input, and one-step estimate, t = 0.75</figcaption>
+        </figure>
+
+        <h2>1.4: Visualizing Velocity</h2>
+        <p>The predicted update (1 &minus; t)v&#770;<sub>t</sub> closely matches the ground-truth update. They both show a faint version of the scene all grayed out. The error heat map itself highlights the fine details and edges, similar to what a high frequency image looks like. The higher the t, the more grayed out the images are.</p>
+        <figure class="single w40">
+            <img src="images/part_A/velocity_original.png" alt="Original image">
+            <figcaption>Original image</figcaption>
+        </figure>
+        <figure class="wide">
+            <img src="images/part_A/velocity_0.25.png" alt="Noisy input, predicted update, ground-truth update, and error map at t = 0.25">
+            <figcaption>Noisy input, predicted update, ground-truth update, and RGB RMS error map, t = 0.25</figcaption>
+        </figure>
+        <figure class="wide">
+            <img src="images/part_A/velocity_0.50.png" alt="Noisy input, predicted update, ground-truth update, and error map at t = 0.50">
+            <figcaption>Noisy input, predicted update, ground-truth update, and RGB RMS error map, t = 0.50</figcaption>
+        </figure>
+        <figure class="wide">
+            <img src="images/part_A/velocity_0.75.png" alt="Noisy input, predicted update, ground-truth update, and error map at t = 0.75">
+            <figcaption>Noisy input, predicted update, ground-truth update, and RGB RMS error map, t = 0.75</figcaption>
+        </figure>
+
+        <h2>1.5: Iterative Denoising with Euler Sampling</h2>
+        <p>Below, we see Euler samples of the street in Tokyo using 25 steps with step size h = 0.02 and starting from t = 0.50. The final result at t = 1.00 is the closest to the original image with few issues compared to the original. Using this iterative method works a lot better than classical denoising and one-step denoising as it allows the model to fix mistakes little by little, rather than conducting massive fixes (which results in blurs, smudges, and lost details).</p>
+        <figure class="wide w85">
+            <img src="images/part_A/trajectory.png" alt="Euler denoising trajectory from t = 0.50">
+            <figcaption>Euler denoising trajectory from t = 0.50 (initial, every 5th step, final)</figcaption>
+        </figure>
+        <figure class="wide">
+            <img src="images/part_A/comparison.png" alt="Original vs Gaussian blur vs one-step vs Euler">
+            <figcaption>Original vs Gaussian blur vs one-step vs Euler</figcaption>
+        </figure>
+
+        <h2>1.6: Generating Images from Noise</h2>
+        <p>Using our Euler sampling from before, and the prompt "a high quality photo" at t = 0, I generated the images of the 5 people below. It appears that this broad prompt favors generating images of people, though some are extremely distorted and others have uneven proportions which simulate the uncanny valley.</p>
+        <figure class="wide">
+            <img src="images/part_A/conditional_samples.png" alt="5 samples from pure noise with the prompt a high quality photo">
+            <figcaption>5 samples, prompt <span class="prompt">"a high quality photo"</span>, seeds 180&ndash;184</figcaption>
+        </figure>
+
+        <h2>2.1: Classifier-Free Guidance</h2>
+        <p>Below we use Classifier-Free Guidance which runs the model twice at each step. One run uses the prompt v<sub>c</sub> and the other uses a null condition as the prompt (empty prompt). We then combine them together which pushes the image towards the prompt description. All 5 samples below use the same seeds as the 5 images from above. Comparing the two, we can see that the images here are a lot less distorted than in 1.6, with none of the faces being distorted or having massively uneven proportions. The images produced with CFG are a lot sharper and realistic as well while also being less varied in terms of perspective as they are all simple headshots. Overall, Classifier-Free Guidance is a huge improvement from our results in 1.6.</p>
+        <figure class="wide">
+            <img src="images/part_A/cfg_samples.png" alt="5 samples with classifier-free guidance w = 7">
+            <figcaption>5 samples with CFG w = 7, same seeds as 1.6</figcaption>
+        </figure>
+
+        <h2>3.1: Image-to-Image Editing</h2>
+        <p>In the examples below, we noise our starting image to a start time t, and then run Classifier-Free Guidance with Euler sampling from t to 1 using "a high quality photo" as the prompt on the 3 examples (the Campanile, a street in Tokyo with a truck, and another street in Tokyo). From the examples, we can see that lower t values use more noise than the real image, resulting in images that create new details or scenes. For instance, the buildings in the background of Tokyo become a tree, a mountain, or a washing machine. For high t values, the image starts to resemble the original as a lot more of it survives when noised, showing that as t increases, the image will look more like the original. The original appears to start appearing more around t = 0.14.</p>
+        <figure class="wide w90">
+            <img src="images/part_A/edit_campanile.png" alt="Campanile edits at start times 0.02 to 0.50">
+            <figcaption>Campanile, starting times 0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_A/edit_my_image_1.png" alt="Tokyo street (daytime) edits at start times 0.02 to 0.50">
+            <figcaption>My image 1 (Tokyo street, daytime)</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_A/edit_my_image_2.png" alt="Tokyo street (dusk) edits at start times 0.02 to 0.50">
+            <figcaption>My image 2 (Tokyo street, dusk)</figcaption>
+        </figure>
+
+        <h3>Editing Hand-Drawn and Web Images</h3>
+        <p>The same trend can be seen with the web image and hand-drawn images below. Our blue crying emoji becomes a laptop of sorts at low t values while reappearing at high t values. The same applies for our little robot man in the 3rd example who becomes a sticky note at t = 0.02. Our abstract shapes example in the 2nd example shows a similar pattern, with only the green circle remaining at t = 0.02 and the arrow becoming a paint brush of sorts at lower t values as well.</p>
+        <figure class="wide w90">
+            <img src="images/part_A/edit_web_image.png" alt="Emoji web image edits at start times 0.02 to 0.50">
+            <figcaption>Web image (emoji)</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_A/edit_drawing_1.png" alt="Abstract shapes drawing edits at start times 0.02 to 0.50">
+            <figcaption>Hand drawing 1 (abstract shapes)</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_A/edit_drawing_2.png" alt="Character drawing edits at start times 0.02 to 0.50">
+            <figcaption>Hand drawing 2 (character)</figcaption>
+        </figure>
+
+        <h2>3.2: Text-Guided Image Editing</h2>
+        <p>Below, we did the same process as in 3.1 but with my own custom prompts. For the campanile, I directed it to create a photo of a q-tip in the sky. At low t-values, it did transform the campanile into objects resembling a q-tip, ultimately becoming a lollipop at t = 0.02. For our first Tokyo street image, I prompted it with "a photograph of a boat floating on a flooded city". At t = 0.14 and below, this image is recreated very well with more of the original being present, represented as wilder waves. For our last image of our street in Tokyo, the prompt was "A traditional japanese street with traditional wooden buildings" which it recreated very well at lower t values, gradually becoming more modern buildings as t approached 0.50. Overall, the campanile q-tip was the weakest example, possibly because the model didn't know how to draw out a q-tip exactly, making it create other objects which were similar in shape to it (like a lollipop or thermometer).</p>
+        <figure class="wide">
+            <img src="images/part_A/text_edit_campanile.png" alt="Text-guided Campanile edits at start times 0.02 to 0.50">
+            <figcaption>Campanile, prompt <span class="prompt">"A photograph of a q-tip in the sky"</span></figcaption>
+        </figure>
+        <figure class="wide">
+            <img src="images/part_A/text_edit_my_image_1.png" alt="Text-guided Tokyo street (daytime) edits at start times 0.02 to 0.50">
+            <figcaption>My image 1, prompt <span class="prompt">"A photograph of a boat floating on a flooded city"</span></figcaption>
+        </figure>
+        <figure class="wide">
+            <img src="images/part_A/text_edit_my_image_2.png" alt="Text-guided Tokyo street (dusk) edits at start times 0.02 to 0.50">
+            <figcaption>My image 2, prompt <span class="prompt">"A traditional japanese street with traditional wooden buildings"</span></figcaption>
+        </figure>
+
+        <h2>3.3: Visual Anagrams</h2>
+        <p>Below are examples of Visual Anagrams. For each step, we used v1 which was a Classifier Free Guidance image for prompt 1, and v2 was another Classifier Free Guidance image reversed 180 degrees for prompt 2. We then averaged the two of them using v = (v1 + v2) / 2 and took Euler steps with it to form our output. This resulted in an image looking like prompt 1 upright and prompt 2 flipped, like the old man and campfire image in the spec that I generated. The other two examples are the same image with a cat and an owl where the cat's face appears like the owl's feet upside down, and the third example is using a snake and a ferret where the opposing animal's head looks like their tail.</p>
+        <p class="row-label">Example from the spec</p>
+        <figure class="wide w55">
+            <img src="images/part_A/anagram_views_0.png" alt="Visual anagram: old man upright, people around a campfire rotated 180 degrees">
+            <figcaption>Left (upright): <span class="prompt">"an oil painting of an old man"</span>. Right (rotated 180&deg;): <span class="prompt">"an oil painting of people around a campfire"</span></figcaption>
+        </figure>
+        <p class="row-label">My illusions</p>
+        <figure class="wide w55">
+            <img src="images/part_A/anagram_views_1.png" alt="Visual anagram: cat upright, owl rotated 180 degrees">
+            <figcaption>Left (upright): <span class="prompt">"a lithograph of a cat"</span>. Right (rotated 180&deg;): <span class="prompt">"a lithograph of an owl"</span></figcaption>
+        </figure>
+        <figure class="wide w55">
+            <img src="images/part_A/anagram_views_2.png" alt="Visual anagram: snake upright, ferret rotated 180 degrees">
+            <figcaption>Left (upright): <span class="prompt">"a lithograph of a snake"</span>. Right (rotated 180&deg;): <span class="prompt">"an ink painting of ferret"</span></figcaption>
+        </figure>
+
+        <h2>3.4: Hybrid Images</h2>
+        <p>For the hybrid images, I took the Classifier Free Guidance velocities for two separate prompts, and took the low frequency image of v1 and high frequency image of v2 (original - blur using a gaussian blur, kernel size = 265, and &sigma; = 16) and add them together like we did in project 2 before conducting the Euler step. This allows us to see the high frequency image from up close, and the low frequency image from afar. The first example is the example in the spec replicated of the waterfall up close and skull from far away. Example 2 is a bouquet of flowers close up, and a woman from far away which you can see with the flowers becoming the woman's hair, eyes, and nose. The 3rd example is of a close up image of coral, which from far away looks like a sea turtle. This one works by making use of both the shape of the groupings of the coral to create the shape of a sea turtle, and also making use of the color of the coral to effectively color in the turtle as well, separating its flippers and head from its shell.</p>
+
+        <p class="row-label">Example from the spec</p>
+        <div class="hybrid">
+            <figure>
+                <img src="images/part_A/hybrid_0.png" alt="Hybrid image: waterfall up close, skull from afar">
+                <figcaption>Close: <span class="prompt">"a lithograph of a waterfall"</span></figcaption>
+            </figure>
+            <figure class="far">
+                <img src="images/part_A/hybrid_0.png" alt="Hybrid image shrunk to simulate viewing from afar">
+                <figcaption>Distant: <span class="prompt">"a lithograph of a skull"</span></figcaption>
+            </figure>
+        </div>
+
+        <p class="row-label">My hybrids</p>
+        <div class="hybrid">
+            <figure>
+                <img src="images/part_A/hybrid_2.png" alt="Hybrid image: flowers up close, woman's face from afar">
+                <figcaption>Close: <span class="prompt">"a lithograph of a bundle of flowers"</span></figcaption>
+            </figure>
+            <figure class="far">
+                <img src="images/part_A/hybrid_2.png" alt="Hybrid image shrunk to simulate viewing from afar">
+                <figcaption>Distant: <span class="prompt">"a lithograph of a woman's face"</span></figcaption>
+            </figure>
+        </div>
+
+        <div class="hybrid">
+            <figure>
+                <img src="images/part_A/hybrid_1.png" alt="Hybrid image: coral reef up close, sea turtle from afar">
+                <figcaption>Close: <span class="prompt">"a watercolor of a coral reef"</span></figcaption>
+            </figure>
+            <figure class="far">
+                <img src="images/part_A/hybrid_1.png" alt="Hybrid image shrunk to simulate viewing from afar">
+                <figcaption>Distant: <span class="prompt">"a watercolor of a sea turtle"</span></figcaption>
+            </figure>
+        </div>
+
+        <!-- ===================== PART B ===================== -->
+
+        <h2>Part B: Flow Matching from Scratch</h2>
+
+        <h2>1.2: Noising Process</h2>
+        <figure class="wide w90">
+            <img src="images/part_B/noisy.png" alt="A test digit noised at sigma 0.0 to 1.0">
+            <figcaption>A test digit noised with z = x + &sigma;&epsilon; for &sigma; = 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0.</figcaption>
+        </figure>
+
+        <h2>1.2.1: Training</h2>
+        <p>&sigma; = 0.5, D = 128, batch size 256, Adam with lr 1e-4, 5 epochs.</p>
+        <figure class="wide w90">
+            <img src="images/part_B/denoiser_loss.png" alt="Training loss for the sigma = 0.5 denoiser">
+            <figcaption>Training loss for the &sigma; = 0.5 denoiser.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/denoise_epoch1.png" alt="Denoising test results after epoch 1">
+            <figcaption>Test results after epoch 1. Rows: clean, noisy (&sigma; = 0.5), denoised.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/denoise_epoch5.png" alt="Denoising test results after epoch 5">
+            <figcaption>Test results after epoch 5. Rows: clean, noisy (&sigma; = 0.5), denoised.</figcaption>
+        </figure>
+        <p>We can see that after one epoch, the denoised digits are recognizable but slightly blurry. However, after 5 epochs they appear very clear and match the original image very closely, though some detail is lost like the little speck inside the circle of the digit 9.</p>
+
+        <h2>1.2.2: Out-of-Distribution Testing</h2>
+        <figure class="wide w90">
+            <img src="images/part_B/denoise_out_of_distribution.png" alt="One test digit at sigma 0.0 to 1.0 and the denoiser output">
+            <figcaption>Top: one test digit at &sigma; = 0.0 to 1.0. Bottom: denoiser output.</figcaption>
+        </figure>
+        <p>From the image above, we can see that the denoiser works the best at &sigma; = 0.5 as the model was trained on that value. It still worked well from 0.0 to 0.6, however the output did get worse at &sigma; = 0.8 and 1.0 as the model wasn't familiar with seeing that much noise.</p>
+
+        <h2>1.2.3: Denoising Pure Noise</h2>
+        <figure class="wide w90">
+            <img src="images/part_B/pure_noise_loss.png" alt="Training loss when the input is pure Gaussian noise">
+            <figcaption>Training loss when the input is pure Gaussian noise.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/pure_noise_epoch_1.png" alt="Pure noise inputs and model outputs after epoch 1">
+            <figcaption>Top: pure noise inputs. Bottom: model outputs after epoch 1.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/pure_noise_epoch_5.png" alt="Pure noise inputs and model outputs after epoch 5">
+            <figcaption>Top: pure noise inputs. Bottom: model outputs after epoch 5.</figcaption>
+        </figure>
+        <p>When using pure noise, we can see that every output is the same blurry blob that resembles a mix of digits (9, 8, 3, 0, mostly digits containing or made up of circles). Additionally, the output doesn't appear to change with the input either. This is most likely because the input is pure random noise, which means that it contains no information at all regarding which digit it originated from. As a result, using MSE encourages the model to produce the least amount of error which comes out as a blurry combination of multiple digits.</p>
+
+        <h2>2.1&ndash;2.3: Time-Conditioned UNet</h2>
+        <p>D = 64, batch size 64, Adam with lr 1e-2 and ExponentialLR with &gamma; = 0.1<sup>1/10</sup>, 10 epochs, 50 sampling steps.</p>
+        <p>Below, we make use of a time-conditioned UNet that is also given the time t. It learns which direction to go to make a pure noise image look more like a digit by taking many small steps. From the images below, we can see that by epoch 5, we can see the digits (though a bit scrambled) while they are a lot more well-formed in epoch 10 as a whole. Though some do still remain messy like some of the examples in the bottom right of the grid as the model can't decide which direction to go in.</p>
+        <figure class="wide w90">
+            <img src="images/part_B/time_loss.png" alt="Training loss for the time-conditioned UNet">
+            <figcaption>Training loss for the time-conditioned UNet.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/time_epoch1.png" alt="Time-conditioned samples after epoch 1">
+            <figcaption>Samples after epoch 1.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/time_epoch5.png" alt="Time-conditioned samples after epoch 5">
+            <figcaption>Samples after epoch 5.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/time_epoch10.png" alt="Time-conditioned samples after epoch 10">
+            <figcaption>Samples after epoch 10.</figcaption>
+        </figure>
+
+        <h2>2.4&ndash;2.6: Class-Conditioned UNet</h2>
+        <p>Here, we use the same setup as above with 300 sampling steps and a class dropout p<sub>uncond</sub> = 0.1 as well as classifier-free guidance with &gamma; = 5.</p>
+        <p>Now, we also tell the model which specific digit to make. For example, the digit '0'. We also hide the labels we usually pass in 10% of the time to allow the model to learn how to generate a digit without using a label. As a whole, the samples are clean and correct with all the digits appearing correctly from epoch 5, and appearing clear by epoch 10 for all digits 0 to 9.</p>
+        <figure class="wide w90">
+            <img src="images/part_B/class_loss.png" alt="Training loss for the class-conditioned UNet">
+            <figcaption>Training loss for the class-conditioned UNet.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/class_sample_epoch1.png" alt="Class-conditioned samples after epoch 1">
+            <figcaption>Samples after epoch 1. Each row shows digits 0 to 9.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/class_sample_epoch5.png" alt="Class-conditioned samples after epoch 5">
+            <figcaption>Samples after epoch 5. Each row shows digits 0 to 9.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/class_sample_epoch10.png" alt="Class-conditioned samples after epoch 10">
+            <figcaption>Samples after epoch 10. Each row shows digits 0 to 9.</figcaption>
+        </figure>
+
+        <h3>Removing the Learning Rate Scheduler</h3>
+        <p>In the below outputs, instead of using the exponential scheduler that was being used previously, a constant learning rate of 1e-3 was used instead. In the original run, the learning rate started at 1e-2 and shrank a smaller amount each epoch which encouraged earlier runs to learn faster and later runs to be used for smaller microadjustments. By getting rid of the scheduler, the shrinking was removed causing the learning rate to be fixed throughout every epoch (constant at 1e-3). From the outputs below, without the learning rate scheduler, the model ended up generating the digits much more clearly at epoch 1 (with most of them clearly identifiable) which we see happens at epoch 5 but not epoch 1 for the run with the learning rate scheduler.</p>
+        <figure class="wide w90">
+            <img src="images/part_B/no_sched_loss.png" alt="Training loss without a scheduler">
+            <figcaption>Training loss without a scheduler (constant lr 1e-3).</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/no_schedule_sample_epoch1.png" alt="No-scheduler samples after epoch 1">
+            <figcaption>No-scheduler samples after epoch 1.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/no_schedule_sample_epoch5.png" alt="No-scheduler samples after epoch 5">
+            <figcaption>No-scheduler samples after epoch 5.</figcaption>
+        </figure>
+        <figure class="wide w90">
+            <img src="images/part_B/no_schedule_sample_epoch10.png" alt="No-scheduler samples after epoch 10">
+            <figcaption>No-scheduler samples after epoch 10.</figcaption>
+        </figure>
+    </div>
+</body>
+</html>
