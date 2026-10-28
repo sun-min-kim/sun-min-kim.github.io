@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Project 4A — Sun Min Kim</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .wide {
+            margin: 1.25rem 0;
+        }
+        .w70 { width: 70%; margin-left: auto; margin-right: auto; }
+        .w85 { width: 85%; margin-left: auto; margin-right: auto; }
+        .w50 { width: 50%; margin-left: auto; margin-right: auto; }
+        .eq { overflow-x: auto; font-size: 0.9rem; }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1.25rem 0;
+        }
+        .grid-3 figure { min-width: 0; }
+        .grid-3.w70, .grid-3.w85 { margin-left: auto; margin-right: auto; }
+        @media (max-width: 620px) {
+            .grid-3 { grid-template-columns: 1fr; }
+        }
+        .guide {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="backlink" href="../index.html">&larr; Back to home</a>
+        <h1>Project 4A</h1>
+        <p class="subtitle">Image Warping and Mosaicing</p>
+
+        <h2>A.1: Shoot the Pictures</h2>
+        <p>Below are 3 sets of 3 photos I took around Berkeley. The first set is of Downtown Bancroft taken horizontally, the second is Downtown Bancroft taken vertically, and the last is the inside of an Apartment building with a pool. For each set, I kept the camera in one spot, only rotating it in between each picture, which helps to keep the camera fixed. I also took the photos so that about 40-70% of each image pair lines up.</p>
+
+        <h3>Set 1: Downtown Bancroft (Horizontal)</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="images/IMG_8109.jpeg" alt="Downtown Bancroft (Horizontal), left">
+                <figcaption>Left</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8110.jpeg" alt="Downtown Bancroft (Horizontal), middle">
+                <figcaption>Middle</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8111.jpeg" alt="Downtown Bancroft (Horizontal), right">
+                <figcaption>Right</figcaption>
+            </figure>
+        </div>
+
+        <h3>Set 2: Downtown Bancroft (Vertical)</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="images/IMG_8112.jpeg" alt="Downtown Bancroft (Vertical), left">
+                <figcaption>Left</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8113.jpeg" alt="Downtown Bancroft (Vertical), middle">
+                <figcaption>Middle</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8114.jpeg" alt="Downtown Bancroft (Vertical), right">
+                <figcaption>Right</figcaption>
+            </figure>
+        </div>
+
+        <h3>Set 3: Apartment</h3>
+        <div class="grid-3">
+            <figure>
+                <img src="images/IMG_8115.jpeg" alt="Apartment, left">
+                <figcaption>Left</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8116.jpeg" alt="Apartment, middle">
+                <figcaption>Middle</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8117.jpeg" alt="Apartment, right">
+                <figcaption>Right</figcaption>
+            </figure>
+        </div>
+
+        <h2>A.2: Recover Homographies</h2>
+        <p>A homography is a 3x3 matrix that maps points in one image to another. Each pair of matching points gives 2 equations to match points between images. In the image examples I had, a selection of 8 pairs of points was used.</p>
+        <p>When picking the 8 points, I chose sharp corners of objects (like windows, fences, and cars), since corners are easier to match at the same spot in both images.</p>
+        <p>For the systems of equations, I used the matrix equation A • h = b, and then the following two rows are used to calculate the corresponding points:</p>
+        <pre class="eq">[ x   y   1   0   0   0   -x·x'   -y·x' ] · h = x'
+[ 0   0   0   x   y   1   -x·y'   -y·y' ] · h = y'
+
+h = [ a  b  c  d  e  f  g  h ]ᵀ        H = [ a  b  c ]
+                                           [ d  e  f ]
+                                           [ g  h  1 ]</pre>
+        <p>where (x, y) is the point in the first image and (x', y') is the point in the second image. By stacking these 8 points, we get 16 equations total with 8 unknowns:</p>
+        <pre class="eq">[ x1  y1  1   0   0   0   -x1·x1'  -y1·x1' ]         [ x1' ]
+[ 0   0   0   x1  y1  1   -x1·y1'  -y1·y1' ]         [ y1' ]
+[                   ...                    ] · h  =  [ ... ]
+[ x8  y8  1   0   0   0   -x8·x8'  -y8·x8' ]         [ x8' ]
+[ 0   0   0   x8  y8  1   -x8·y8'  -y8·y8' ]         [ y8' ]</pre>
+        <p>I then calculated the values using np.linalg.lstsq.</p>
+
+        <h3>Correspondences</h3>
+        <div class="pair">
+            <figure>
+                <img src="output/points_a.png" alt="Correspondences on image A">
+                <figcaption>Correspondences on image A</figcaption>
+            </figure>
+            <figure>
+                <img src="output/points_b.png" alt="Correspondences on image B">
+                <figcaption>Correspondences on image B</figcaption>
+            </figure>
+        </div>
+
+        <h3>Recovered Homography</h3>
+        <p>For the pair of images above (Downtown Bancroft (Horizontal), left image to middle image), the recovered homography H is:</p>
+        <pre class="eq">H = [  2.1146     0.0074    -1581.86 ]
+    [  0.4133     1.7010     -519.41 ]
+    [  5.556e-4  -1.973e-5      1    ]</pre>
+        <p>Applying H to the points in the first image lands them within 1.7 to 7.2 pixels (4.2 on average) of the points I clicked in the second image.</p>
+
+        <h2>A.3: Warp the Images</h2>
+        <p>To warp the images, I used the image that was going to be warped, and for each pixel used the inverse of H to find where that pixel would map to in the original image. When doing this, there are two methods that can be used: Nearest Neighbor copies the closest pixel by rounding the coordinate values, Bilinear blends the 4 pixels around the spot to get what the pixel should look like.</p>
+
+        <h3>Rectification</h3>
+        <p>In the below two examples, I rectified the storefront window in the first image of Bancroft, and the metal fence on the second floor of the apartment photo. I clicked the 4 corners of the rectangles as they appeared in the image, which were then mapped to a straight rectangle. For each of the rectangles, I chose a pixel size of (440 x 200) and (500 x 200) respectively, which I estimated from the photos. As a result of rectifying, the rectangles selected become straight and sharp, warping the perspective of the photo so that it looks like we are looking at the selected rectangles head on.</p>
+        <p>Example 1: storefront window</p>
+        <div class="pair w70">
+            <figure>
+                <img src="images/IMG_8109.jpeg" alt="Original photo with the storefront window">
+                <figcaption>Original</figcaption>
+            </figure>
+            <figure>
+                <img src="output/rectified_downtown_bancroft_window.png" alt="Rectified storefront window">
+                <figcaption>Rectified</figcaption>
+            </figure>
+        </div>
+        <p>Example 2: metal fence</p>
+        <div class="pair w70">
+            <figure>
+                <img src="images/IMG_8116.jpeg" alt="Original photo with the metal fence">
+                <figcaption>Original</figcaption>
+            </figure>
+            <figure>
+                <img src="output/rectified_apartment_fence.png" alt="Rectified metal fence">
+                <figcaption>Rectified</figcaption>
+            </figure>
+        </div>
+
+        <h3>Nearest Neighbor vs. Bilinear Interpolation</h3>
+        <div class="pair">
+            <figure>
+                <img src="output/warped_nearest_neighbor.png" alt="Warp with nearest neighbor interpolation">
+                <figcaption>Nearest neighbor</figcaption>
+            </figure>
+            <figure>
+                <img src="output/warped_bilinear.png" alt="Warp with bilinear interpolation">
+                <figcaption>Bilinear</figcaption>
+            </figure>
+        </div>
+        <p>Zoomed in on the "Right Only" sign</p>
+        <div class="pair w50">
+            <figure>
+                <img src="output/nearest_neighbor_right_only.png" alt="Right Only sign, nearest neighbor">
+                <figcaption>Nearest neighbor</figcaption>
+            </figure>
+            <figure>
+                <img src="output/bilinear_right_only.png" alt="Right Only sign, bilinear">
+                <figcaption>Bilinear</figcaption>
+            </figure>
+        </div>
+        <p>The two photos show warping the image by using the Nearest Neighbor and Bilinear approaches. As a whole, the two photos look effectively the same, particularly when it comes to how much the image stretches in which dimensions. However, there are slight differences when you zoom into diagonal lines in the image. For instance, zooming into the Right Only sign in the Nearest Neighbor photo shows jagged edges on the photo as the pixels are taken from the nearest one. The Bilinear photo, however, doesn't show this and has a lot smoother edges, as a result of blending the 4 nearest pixels instead of rounding. As a result, I believe the Bilinear approach is better in terms of image quality. However, it does take longer to run on average than Nearest Neighbor, averaging about 2~3 times more processing time for the same image (Nearest Neighbor: 0.368s, Bilinear: 0.912s).</p>
+        <p>For the rest of the mosaic images made, I made use of the Bilinear approach as the image quality was slightly better, despite the tradeoff in time.</p>
+
+        <h2>A.4: Blend the Images into a Mosaic</h2>
+        <p>Using everything done in the previous sections, mosaics of the images can be made, merging the 3 images together. For all of these, the middle image was used as the center reference, and the left and right images were warped to match its proportions. In order to do this, the right image's point pairs were effectively swapped to get the right side direction. Using these warped images, I made one larger image that shows all of the images combined using each image's offset. For blending, I made use of distance_transform_edt, where each pixel's weight is its distance to the edge of the image, which helped make the transition between images more seamless.</p>
+
+        <h3>Mosaic 1: Downtown Bancroft (Horizontal)</h3>
+        <div class="grid-3 w70">
+            <figure>
+                <img src="images/IMG_8109.jpeg" alt="Downtown Bancroft (Horizontal), left source">
+                <figcaption>Left</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8110.jpeg" alt="Downtown Bancroft (Horizontal), middle source">
+                <figcaption>Middle</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8111.jpeg" alt="Downtown Bancroft (Horizontal), right source">
+                <figcaption>Right</figcaption>
+            </figure>
+        </div>
+        <figure class="wide w85">
+            <img src="output/mosaic_downtown_bancroft.png" alt="Downtown Bancroft (Horizontal) mosaic">
+            <figcaption>Mosaic</figcaption>
+        </figure>
+        <div class="pair w70">
+            <figure>
+                <img src="output/downtown_bancroft_pair_0_a.png" alt="Left to middle correspondences, left image">
+                <figcaption>Left &rarr; middle: points on left</figcaption>
+            </figure>
+            <figure>
+                <img src="output/downtown_bancroft_pair_0_b.png" alt="Left to middle correspondences, middle image">
+                <figcaption>Left &rarr; middle: points on middle</figcaption>
+            </figure>
+            <figure>
+                <img src="output/downtown_bancroft_pair_1_a.png" alt="Middle to right correspondences, middle image">
+                <figcaption>Middle &rarr; right: points on middle</figcaption>
+            </figure>
+            <figure>
+                <img src="output/downtown_bancroft_pair_1_b.png" alt="Middle to right correspondences, right image">
+                <figcaption>Middle &rarr; right: points on right</figcaption>
+            </figure>
+        </div>
+
+        <p>This mosaic came out clean as a whole, with the edges blending in well and the street looking consistent across the image, especially if the black bars at the top and bottom are cropped off. One weakness though is that the person walking in the left image's distortion is more noticeable; however, this is to be expected as the image itself is being warped, and disproportionate humans are naturally more noticeable to us. Overall though, the street and building look clean and smooth.</p>
+
+        <h3>Mosaic 2: Downtown Bancroft (Vertical)</h3>
+        <div class="grid-3 w70">
+            <figure>
+                <img src="images/IMG_8112.jpeg" alt="Downtown Bancroft (Vertical), left source">
+                <figcaption>Left</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8113.jpeg" alt="Downtown Bancroft (Vertical), middle source">
+                <figcaption>Middle</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8114.jpeg" alt="Downtown Bancroft (Vertical), right source">
+                <figcaption>Right</figcaption>
+            </figure>
+        </div>
+        <figure class="wide w85">
+            <img src="output/mosaic_vertical_downtown_bancroft.png" alt="Downtown Bancroft (Vertical) mosaic">
+            <figcaption>Mosaic</figcaption>
+        </figure>
+        <div class="pair w70">
+            <figure>
+                <img src="output/vertical_downtown_bancroft_pair_0_a.png" alt="Left to middle correspondences, left image">
+                <figcaption>Left &rarr; middle: points on left</figcaption>
+            </figure>
+            <figure>
+                <img src="output/vertical_downtown_bancroft_pair_0_b.png" alt="Left to middle correspondences, middle image">
+                <figcaption>Left &rarr; middle: points on middle</figcaption>
+            </figure>
+            <figure>
+                <img src="output/vertical_downtown_bancroft_pair_1_a.png" alt="Middle to right correspondences, middle image">
+                <figcaption>Middle &rarr; right: points on middle</figcaption>
+            </figure>
+            <figure>
+                <img src="output/vertical_downtown_bancroft_pair_1_b.png" alt="Middle to right correspondences, right image">
+                <figcaption>Middle &rarr; right: points on right</figcaption>
+            </figure>
+        </div>
+        
+        <p>This mosaic came out similarly to the previous horizontal Bancroft mosaic. However, one noticeable difference is the area where the middle and right images merge. There is a bit of blur and unfocusedness, likely due to a non-perfect alignment of points between the two images. However, ignoring this discrepancy, the mosaic as a whole looks good.</p>
+
+        <h3>Mosaic 3: Apartment</h3>
+        <div class="grid-3 w70">
+            <figure>
+                <img src="images/IMG_8115.jpeg" alt="Apartment, left source">
+                <figcaption>Left</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8116.jpeg" alt="Apartment, middle source">
+                <figcaption>Middle</figcaption>
+            </figure>
+            <figure>
+                <img src="images/IMG_8117.jpeg" alt="Apartment, right source">
+                <figcaption>Right</figcaption>
+            </figure>
+        </div>
+        <figure class="wide w85">
+            <img src="output/mosaic_apartment.png" alt="Apartment mosaic">
+            <figcaption>Mosaic</figcaption>
+        </figure>
+        <div class="pair w70">
+            <figure>
+                <img src="output/apartment_pair_0_a.png" alt="Left to middle correspondences, left image">
+                <figcaption>Left &rarr; middle: points on left</figcaption>
+            </figure>
+            <figure>
+                <img src="output/apartment_pair_0_b.png" alt="Left to middle correspondences, middle image">
+                <figcaption>Left &rarr; middle: points on middle</figcaption>
+            </figure>
+            <figure>
+                <img src="output/apartment_pair_1_a.png" alt="Middle to right correspondences, middle image">
+                <figcaption>Middle &rarr; right: points on middle</figcaption>
+            </figure>
+            <figure>
+                <img src="output/apartment_pair_1_b.png" alt="Middle to right correspondences, right image">
+                <figcaption>Middle &rarr; right: points on right</figcaption>
+            </figure>
+        </div>
+
+        <p>For this last mosaic of the apartment, I made use of a mix of horizontal and vertical photos to capture different areas of the apartment. As a result, the black ribbon shape on the top and the bottom of the mosaic is more pronounced, compared to the other mosaics as there is a bigger difference in height between the middle image to the left and right images. However, the mosaic itself is clean, seamlessly blending together the three different photos of my apartment to create a simulated wide angle photo.</p>
+       
+    </div>
+</body>
+</html>
